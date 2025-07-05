@@ -35,10 +35,8 @@ jobs:
           ARTIFACTORY_TOKEN: ${{ secrets.ARTIFACTORY_TOKEN }}
         run: |
           conan remote disable conancenter
-          conan remote add swift https://artifactory.swift-project.org/artifactory/api/conan/conan
+          conan remote add swift https://artifactory.swift-project.org/artifactory/api/conan/conan-local
           conan remote login swift "$ARTIFACTORY_USER" --password "$ARTIFACTORY_TOKEN"
-          conan remote add swift_upload https://artifactory.swift-project.org/artifactory/api/conan/conan-local
-          conan remote login swift_upload "$ARTIFACTORY_USER" --password "$ARTIFACTORY_TOKEN"
       - name: Build libraries
         shell: bash
         run: |
@@ -48,4 +46,4 @@ jobs:
         if: github.ref == 'refs/heads/main'
         shell: bash
         run: |
-          conan upload "*" -r swift_upload --confirm
+          conan upload "*" -r swift --confirm
