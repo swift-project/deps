@@ -12,6 +12,10 @@ class SwiftDependencies(ConanFile):
         self.requires("libevent/2.1.12")
         if self.settings.os != "Linux":
             self.requires("dbus/1.15.8")
+
+            # Transitive dependency of dbus
+            self.requires("expat/2.7.1")
+
         self.requires("nlohmann_json/3.11.3")
 
     def configure(self):
@@ -20,6 +24,7 @@ class SwiftDependencies(ConanFile):
         self.options["libsodium"].shared = True
         self.options["opus"].shared = True
         if self.settings.os != "Linux":
+            self.options["dbus"].shared = True
             self.options["dbus"].message_bus = True
 
     def layout(self):
