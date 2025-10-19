@@ -7,9 +7,9 @@ on:
 jobs:
 
   build:
+    name: ${{ matrix.os }} - ${{ matrix.profile }}
     strategy:
       matrix:
-        os: [ubuntu-22.04, windows-2022, macos-13]
         include:
           - os: ubuntu-22.04
             profile: profile_linux
@@ -17,6 +17,8 @@ jobs:
             profile: profile_win
           - os: macos-13
             profile: profile_mac
+          - os: macos-13
+            profile: profile_mac_arm
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
