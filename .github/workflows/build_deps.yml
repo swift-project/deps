@@ -42,8 +42,7 @@ jobs:
       - name: Build libraries
         shell: bash
         run: |
-          conan profile detect
-          conan install . -pr=${{ matrix.profile }} --build=missing
+          conan install . -pr:b=${{ matrix.profile }} -pr:h=${{ matrix.profile }} --build=missing
       - name: Upload libraries
         if: github.ref == 'refs/heads/main'
         shell: bash
