@@ -11,9 +11,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             profile: profile_linux
-          - os: windows-2022
+          - os: windows-2025-vs2026
             profile: profile_win
           - os: macos-13
             profile: profile_mac
