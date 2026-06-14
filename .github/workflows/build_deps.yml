@@ -12,13 +12,17 @@ jobs:
       matrix:
         include:
           - os: ubuntu-24.04
-            profile: profile_linux
+            profile_build: profile_linux
+            profile_host: profile_linux
           - os: windows-2025-vs2026
-            profile: profile_win
-          - os: macos-13
-            profile: profile_mac
-          - os: macos-13
-            profile: profile_mac_arm
+            profile_build: profile_win
+            profile_host: profile_win
+          - os: macos-26
+            profile_build: profile_mac_arm
+            profile_host: profile_mac
+          - os: macos-26
+            profile_build: profile_mac_arm
+            profile_host: profile_mac_arm
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
@@ -42,7 +46,7 @@ jobs:
       - name: Build libraries
         shell: bash
         run: |
-          conan install . -pr:b=${{ matrix.profile }} -pr:h=${{ matrix.profile }} --build=missing
+          conan install . -pr:b=${{ matrix.profile_build }} -pr:h=${{ matrix.profile_host }} --build=missing
       - name: Upload libraries
         if: github.ref == 'refs/heads/main'
         shell: bash
