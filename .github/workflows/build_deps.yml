@@ -133,3 +133,6 @@ jobs:
         shell: bash
         run: |
           conan upload "*" -r swift --confirm
+      - name: Teardown WireGuard (Linux/Mac)
+        if: always() && (matrix.platform == 'linux' || matrix.platform == 'mac')
+        run: sudo wg-quick down wg0 || true
