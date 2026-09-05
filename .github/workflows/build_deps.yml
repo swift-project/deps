@@ -121,7 +121,7 @@ jobs:
           ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
           ARTIFACTORY_TOKEN: ${{ secrets.ARTIFACTORY_TOKEN }}
         run: |
-          conan remote disable conancenter
+          conan remote remove conancenter
           conan remote add swift https://artifactory.swift-project.org/artifactory/api/conan/conan-local
           conan remote login swift "$ARTIFACTORY_USER" --password "$ARTIFACTORY_TOKEN"
       - name: Build libraries
