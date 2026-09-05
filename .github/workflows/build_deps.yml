@@ -11,28 +11,103 @@ jobs:
   build:
     name: ${{ matrix.name }}
     strategy:
+      max-parallel: 1 # for VPN access to Artifactory
       matrix:
         include:
           - name: Ubuntu
             os: ubuntu-24.04
             profile_build: profile_linux
             profile_host: profile_linux
+            platform: linux
           - name: Windows
             os: windows-2025-vs2026
             profile_build: profile_win
             profile_host: profile_win
+            platform: win
           - name: macOS x86
             os: macos-26
             profile_build: profile_mac_arm
             profile_host: profile_mac
+            platform: mac
           - name: macOS Apple Silicon
             os: macos-26
             profile_build: profile_mac_arm
             profile_host: profile_mac_arm
+            platform: mac
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+      - name: Setup WireGuard (Linux)
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update && sudo apt-get install -y wireguard
+          umask 077
+          sudo mkdir -p /etc/wireguard
+          echo "${{ secrets.WG_PRIVATE_KEY_DEPS }}" | sudo tee /etc/wireguard/wg0.key >/dev/null
+          sudo tee /etc/wireguard/wg0.conf >/dev/null <<EOF
+          [Interface]
+          Address = 10.99.0.2/32
+          PrivateKey = $(sudo cat /etc/wireguard/wg0.key)
+
+          [Peer]
+          PublicKey = ${{ secrets.WG_SERVER_PUBLIC_KEY }}
+          Endpoint = ${{ secrets.WG_SERVER_ENDPOINT }}
+          AllowedIPs = 10.99.0.1/32
+          EOF
+          sudo wg-quick up wg0
+
+      - name: Setup WireGuard (macOS)
+        if: matrix.platform == 'mac'
+        run: |
+          brew install wireguard-tools
+          umask 077
+          sudo mkdir -p /etc/wireguard
+          cat > /tmp/wg0.conf <<EOF
+          [Interface]
+          Address = 10.99.0.2/32
+          PrivateKey = ${{ secrets.WG_PRIVATE_KEY_DEPS }}
+
+          [Peer]
+          PublicKey = ${{ secrets.WG_SERVER_PUBLIC_KEY }}
+          Endpoint = ${{ secrets.WG_SERVER_ENDPOINT }}
+          AllowedIPs = 10.99.0.1/32
+          EOF
+          sudo cp /tmp/wg0.conf /etc/wireguard/wg0.conf
+          sudo wg-quick up wg0
+
+      - name: Setup WireGuard (Windows)
+        if: matrix.platform == 'win'
+        shell: pwsh
+        run: |
+          $installerPath = "$env:TEMP\wireguard-installer.exe"
+          curl.exe -L -o $installerPath https://download.wireguard.com/windows-client/wireguard-installer.exe
+
+          $expectedHash = "6962b6f42bc442e2a822608817222c93c7ef03f34476337608b170d4d76fd5f3"
+          $actualHash = (Get-FileHash -Path $installerPath -Algorithm SHA256).Hash
+
+          if ($actualHash -ne $expectedHash) {
+              Write-Error "Hash mismatch! Expected $expectedHash, got $actualHash"
+              exit 1
+          }
+
+          Start-Process -FilePath $installerPath -ArgumentList "/quicksilent" -Wait
+
+
+          $config = @"
+          [Interface]
+          Address = 10.99.0.2/32
+          PrivateKey = ${{ secrets.WG_PRIVATE_KEY_DEPS }}
+
+          [Peer]
+          PublicKey = ${{ secrets.WG_SERVER_PUBLIC_KEY }}
+          Endpoint = ${{ secrets.WG_SERVER_ENDPOINT }}
+          AllowedIPs = 10.99.0.1/32
+          "@
+          $config | Out-File -FilePath "$env:TEMP\wg0.conf" -Encoding ASCII
+
+          & "C:\Program Files\WireGuard\wireguard.exe" /installtunnelservice "$env:TEMP\wg0.conf"
+          Start-Sleep -Seconds 5
       - name: Install Python
         uses: actions/setup-python@v6
         with:
